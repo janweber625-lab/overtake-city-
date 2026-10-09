@@ -13,7 +13,7 @@
 <main>
 <section class="hero" id="start"><div class="wrap hero-content"><div class="eyebrow">GTA Roleplay · Deine Stadt · Deine Geschichte</div><h1>OverTake <span>City</span></h1><p>Schreib deine eigene Geschichte. Entdecke neue Möglichkeiten, lerne Menschen kennen und werde Teil einer lebendigen Roleplay-Community.</p><div class="actions"><a class="btn" href="https://discord.gg/9enDHzhuY3" target="_blank" rel="noopener">☁ Discord beitreten</a><a class="btn secondary" href="fivem://connect/193.111.248.245">▶ Server beitreten</a><button class="btn secondary" id="copyIp">▣ Server-IP kopieren</button></div><p id="copyMessage" class="tiny" aria-live="polite"></p></div></section>
 <section class="features"><div class="wrap feature-row"><div class="feature"><div class="ico">♟</div><div><strong>Aktive Community</strong><small>Gemeinsam statt allein</small></div></div><div class="feature"><div class="ico">▥</div><div><strong>Realistisches RP</strong><small>Jobs, Fraktionen, Wirtschaft</small></div></div><div class="feature"><div class="ico">⬡</div><div><strong>Faires Gameplay</strong><small>Respekt und klare Regeln</small></div></div><div class="feature"><div class="ico">★</div><div><strong>Deine Geschichte</strong><small>Einzigartige Erlebnisse</small></div></div></div></section>
-<section class="section" id="community"><div class="wrap intro"><div class="city"><strong>Willkommen in OverTake City</strong></div><div><div class="eyebrow">Unsere Stadt</div><h2>Mehr als nur ein Server – <span>deine Community.</span></h2><p class="muted">Ob Unternehmer, Polizist, Rettungskraft oder auf der Suche nach deinem eigenen Weg: In OverTake City entscheidest du, wie deine Geschichte weitergeht. Triff neue Leute und gestalte die Stadt mit.</p><div class="stats"><div class="stat"><b id="mainPlayers">—</b><small>Spieler online</small></div><div class="stat"><b>Dein RP</b><small>Deine Geschichte</small></div><div class="stat"><b>24/7</b><small>Community</small></div></div></div><aside class="status"><div class="eyebrow">Serverstatus</div><h3>Live-Spieleranzeige</h3><div class="count"><span id="players">—</span> <small>/ <span id="maxPlayers">—</span></small></div><div class="bar"><span id="playerBar"></span></div><div class="tiny" id="serverStatus">Server-IP: 193.111.248.245 · Live-Status noch nicht verbunden.</div><p class="tiny">Echte Live-Daten erscheinen, sobald ein Serverstatus-Endpunkt konfiguriert wurde.</p></aside></div>
+<section class="section" id="community"><div class="wrap intro"><div class="city"><strong>Willkommen in OverTake City</strong></div><div><div class="eyebrow">Unsere Stadt</div><h2>Mehr als nur ein Server – <span>deine Community.</span></h2><p class="muted">Ob Unternehmer, Polizist, Rettungskraft oder auf der Suche nach deinem eigenen Weg: In OverTake City entscheidest du, wie deine Geschichte weitergeht. Triff neue Leute und gestalte die Stadt mit.</p><div class="stats"><div class="stat"><b id="mainPlayers">—</b><small>Spieler online</small></div><div class="stat"><b>Dein RP</b><small>Deine Geschichte</small></div><div class="stat"><b>24/7</b><small>Community</small></div></div></div><aside class="status"><div class="eyebrow">Serverstatus</div><h3>Live-Spieleranzeige</h3><div class="count"><span id="players">—</span> <small>/ <span id="maxPlayers">—</span></small></div><div class="bar"><span id="playerBar"></span></div><div class="tiny" id="serverStatus">Server-IP: 193.111.248.245:30120 · Status wird geladen …</div><p class="tiny" id="statusUpdated">Die Anzeige aktualisiert sich automatisch, sobald GitHub den Serverstatus abgefragt hat.</p></aside></div>
 <div class="wrap cards">
 <article class="card" id="rules"><img src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=700&q=80" alt="Nachtstadt"><div class="card-body"><h3>Regelwerk</h3><p>Fair bleiben, gutes Roleplay fördern und gemeinsam Spaß haben.</p><a href="#rulesContent" id="toggleRules">Regelwerk ansehen →</a></div></article>
 <article class="card"><img src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=700&q=80" alt="Stadt bei Nacht"><div class="card-body"><h3>Discord</h3><p>News, Support und Austausch mit der Community.</p><a href="https://discord.gg/9enDHzhuY3" target="_blank" rel="noopener">Discord beitreten →</a></div></article>
@@ -26,4 +26,33 @@
 document.getElementById('year').textContent=new Date().getFullYear();
 document.getElementById('copyIp').addEventListener('click',async()=>{const m=document.getElementById('copyMessage');try{await navigator.clipboard.writeText('193.111.248.245');m.textContent='Server-IP kopiert: 193.111.248.245';}catch(e){m.textContent='Server-IP: 193.111.248.245';}});
 document.getElementById('toggleRules').addEventListener('click',e=>{e.preventDefault();const r=document.getElementById('rulesContent');r.classList.toggle('open');if(r.classList.contains('open'))r.scrollIntoView({behavior:'smooth',block:'start'});});
+async function loadServerStatus(){
+  const status=document.getElementById('serverStatus'), updated=document.getElementById('statusUpdated');
+  try{
+    const response=await fetch('./status.json?ts='+Date.now(),{cache:'no-store'});
+    if(!response.ok) throw new Error('Statusdatei noch nicht verfügbar');
+    const data=await response.json();
+    if(data.online){
+      const players=Number(data.players)||0, max=Number(data.maxPlayers)||0;
+      document.getElementById('players').textContent=players;
+      document.getElementById('mainPlayers').textContent=players;
+      document.getElementById('maxPlayers').textContent=max||'—';
+      document.getElementById('playerBar').style.width=(max?Math.min(100,players/max*100):0)+'%';
+      status.textContent='🟢 Server online · 193.111.248.245:30120';
+      if(data.hostname) status.textContent+=' · '+data.hostname;
+      updated.textContent='Spielerzahlen werden ungefähr alle 5 Minuten aktualisiert.';
+    }else{
+      document.getElementById('players').textContent='0';
+      document.getElementById('mainPlayers').textContent='0';
+      document.getElementById('maxPlayers').textContent=data.maxPlayers||'—';
+      document.getElementById('playerBar').style.width='0%';
+      status.textContent='🔴 Server nicht erreichbar oder offline · 193.111.248.245:30120';
+      updated.textContent='Bitte prüfe, ob der Server läuft und der Status-Port 30120 von außen erreichbar ist.';
+    }
+  }catch(e){
+    status.textContent='⏳ Live-Status wird eingerichtet · 193.111.248.245:30120';
+    updated.textContent='Die erste Statusabfrage läuft über GitHub Actions. Bitte später erneut laden.';
+  }
+}
+loadServerStatus();
 </script></body></html>
