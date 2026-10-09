@@ -1,0 +1,62 @@
+name: Update FiveM live player status
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: server-status
+  cancel-in-progress: true
+
+jobs:
+  update-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out website
+        uses: actions/checkout@v4
+      - name: Fetch FiveM status
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import urllib.request
+          from datetime import datetime, timezone
+
+          url = "http://193.111.248.245:30120/dynamic.json"
+          data = {
+              "online": False,
+              "players": 0,
+              "maxPlayers": 0,
+              "hostname": "",
+              "updatedAt": datetime.now(timezone.utc).isoformat()
+          }
+          try:
+              req = urllib.request.Request(url, headers={"User-Agent": "OverTakeCity-Status/1.0"})
+              with urllib.request.urlopen(req, timeout=12) as response:
+                  payload = json.loads(response.read().decode("utf-8"))
+              data["online"] = True
+              data["players"] = int(payload.get("clients", 0) or 0)
+              data["maxPlayers"] = int(payload.get("sv_maxclients", 0) or 0)
+              data["hostname"] = str(payload.get("hostname", ""))[:120]
+          except Exception as exc:
+              print(f"FiveM status endpoint unavailable: {exc}")
+          with open("status.json", "w", encoding="utf-8") as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+              f.write("\n")
+          print(json.dumps(data, ensure_ascii=False))
+          PY
+      - name: Commit status update if changed
+        run: |
+          if git diff --quiet -- status.json; then
+            echo "Status did not change."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add status.json
+          git commit -m "Update FiveM live player status"
+          git push
